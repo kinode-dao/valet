@@ -15,6 +15,9 @@ export interface ValetStore {
   userNodes: string[]
   setUserNodes: (nodes: string[]) => void
   onSignOut: () => void
+  addNodeModalOpen: boolean
+  setAddNodeModalOpen: (open: boolean) => void
+  checkIsNodeAvailable: (node: string) => Promise<boolean>
 }
 
 const useValetStore = create<ValetStore>()(
@@ -58,7 +61,25 @@ const useValetStore = create<ValetStore>()(
         setToken('')
         setUserInfo(null)
         setUserNodes([])
-      }
+      },
+      addNodeModalOpen: false,
+      setAddNodeModalOpen: (open: boolean) => {
+        set({ addNodeModalOpen: open })
+      },
+      checkIsNodeAvailable: async (node: string) => {
+        const token = get().token
+        if (!token) return false
+        const { data: isNodeAvailable } = await axios.get('http://localhost:3000/check-dot-os-availability', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          params: {
+            node
+          }
+        })
+        return Boolean(isNodeAvailable)
+      },
     }),
     {
       name: 'valet', // unique name

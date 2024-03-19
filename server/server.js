@@ -25,41 +25,24 @@ app.post('/x/get-redirect-url', async (_req, res) => {
   }
 });
 
-// Route to retrieve user details using the JWT
-app.get('/get-user-info-x', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(403).send('Authorization header is required');
-  }
-  try {
-    const response = await axios.get('https://api.staging.kinode.net/get-user-info-x', {
-      headers: {
-        Authorization: authHeader
-      }
-    });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error fetching user info:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
+// redirect all other requests to api.staging.kinode.net
+app.all('*', async (req, res) => {
+  const { method, path, body, query } = req;
+  const apiUrl = `https://api.staging.kinode.net${path}`;
 
-// Route to retrieve user kinodes
-app.get('/get-user-kinodes', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(403).send('Authorization header is required');
-  }
   try {
-    const response = await axios.get('https://api.staging.kinode.net/get-user-kinodes', {
-      headers: {
-        Authorization: authHeader
-      }
+    const response = await axios({
+      method,
+      url: apiUrl,
+      data: body,
+      params: query,
+      headers: { ...req.headers, host: new URL(apiUrl).host },
     });
-    res.json(response.data);
+
+    res.status(response.status).json(response.data);
   } catch (error) {
-    console.error('Error fetching user kinodes:', error);
-    res.status(500).send('Internal Server Error');
+    console.error('Error proxying request:', error);
+    res.status(error.response ? error.response.status : 500).send(error.response ? error.response.data : 'Internal Server Error');
   }
 });
 
