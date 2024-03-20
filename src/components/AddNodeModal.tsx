@@ -1,31 +1,119 @@
 import { useState } from 'react'
 import useValetStore from '../store/valetStore'
 import { Modal } from './Modal'
+import { createHash } from 'crypto'
+
+enum AddNodeStage {
+  CheckAvailability = 1,
+  ChoosePassword = 2,
+  Boot = 3,
+}
 
 export const AddNodeModal = () => {
-  const { setAddNodeModalOpen, checkIsNodeAvailable } = useValetStore()
+  const { setAddNodeModalOpen, checkIsNodeAvailable, bootNode, getUserNodes } = useValetStore()
   const [nodeName, setNodeName] = useState('')
-  const [availableNames, setAvailableNames] = useState<{ [key: string]: boolean }>({})
+  const [stage, setStage] = useState(AddNodeStage.CheckAvailability)
+  const [available, setAvailable] = useState<boolean | null>(null)
+  const [passwordHash, setPasswordHash] = useState<string>('')
+  const [confirmPasswordHash, setConfirmPasswordHash] = useState<string>('')
+
+  const onNodeNameChanged = (name: string) => {
+    setAvailable(null)
+    setStage(AddNodeStage.CheckAvailability)
+    setNodeName(name.replace(/\./g, '').replace(/\s/g, '').toLowerCase())
+  }
 
   const onCheckAvailable = async () => {
-    const available = await checkIsNodeAvailable(nodeName)
-    setAvailableNames({ ...availableNames, [nodeName]: available })
+    let isAvail = await checkIsNodeAvailable(nodeName);
+    setAvailable(isAvail)
+    if (isAvail) {
+      setStage(AddNodeStage.ChoosePassword)
+    } else {
+      setStage(AddNodeStage.CheckAvailability)
+    }
   }
+
+  const onPasswordChanged = async (password: string) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hash)); // convert buffer to byte array
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
+    setPasswordHash(hashHex);
+  };
+
+  const onConfirmPasswordChanged = async (password: string) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hash)); // convert buffer to byte array
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
+    setConfirmPasswordHash(hashHex);
+  };
+
+  const onBootNode = async () => {
+    setStage(AddNodeStage.Boot)
+    const { success, error } = await bootNode(nodeName, passwordHash)
+    if (success) {
+      await getUserNodes()
+      setAddNodeModalOpen(false)
+    } else {
+      setStage(AddNodeStage.ChoosePassword)
+      setPasswordHash('')
+      setConfirmPasswordHash('')
+      alert(`Something went wrong: ${error}. Please try again.`)
+    }
+    console.log({ success, error })
+  }
+
   return <Modal title="Add a new node" onClose={() => setAddNodeModalOpen(false)}>
-    <div className='flex'>
+    <div className='flex place-items-center place-content-center'>
+      <span className='self-center mr-2'>Node name:</span>
       <input
         type="text"
         value={nodeName}
-        onChange={(e) => setNodeName(e.target.value)}
-        placeholder='Node name'
+        onChange={(e) => onNodeNameChanged(e.target.value)}
+        placeholder='some-sweet-moniker'
       />
+      <span className='mr-2'>.os</span>
       <button
         onClick={() => onCheckAvailable()}
-        disabled={availableNames[nodeName] === false}
+        disabled={stage !== AddNodeStage.CheckAvailability || nodeName === ''}
       >
-        {availableNames[nodeName] === undefined ? 'Check availability' : availableNames[nodeName] ? 'Available' : 'Not available'}
+        {stage === AddNodeStage.CheckAvailability ? 'Check availability' : 'Available'}
       </button>
     </div>
+    {available === false && <div className='my-2 self-center'>Name not available.</div>}
+    {stage === AddNodeStage.ChoosePassword && <div className='flex flex-col border border-white border-b-0 border-l-0 border-r-0 mt-4'>
+      <div className='self-center my-2'>
+        Choose a strong password for {nodeName}.os.
+      </div>
+      <div className='flex'>
+        <input
+          type="password"
+          onChange={(e) => onPasswordChanged(e.target.value)}
+          placeholder='password'
+          className='grow'
+        />
+        <input
+          type="password"
+          onChange={(e) => onConfirmPasswordChanged(e.target.value)}
+          placeholder='confirm password'
+          className='grow'
+        />
+      </div>
+      {(passwordHash !== confirmPasswordHash || passwordHash === '' || confirmPasswordHash === '')
+        ? <div className='my-2 self-center'>Passwords do not match.</div>
+        : <button
+          onClick={() => onBootNode()}
+          className='mt-2'
+        >
+          Boot node
+        </button>}
+    </div>}
+    {stage === AddNodeStage.Boot && <div className='flex flex-col'>
+      <div className='self-center'>Booting {nodeName}...</div>
+    </div>}
   </Modal>
 }
 

@@ -4,9 +4,10 @@ import useValetStore from '../store/valetStore'
 import { useEffect } from 'react'
 import { UserCard } from './UserCard'
 import { UserNodesList } from './UserNodesList'
+import { AddNodeModal } from './AddNodeModal'
 
 export const Home = () => {
-  const { token, getUserInfo, getUserNodes } = useValetStore()
+  const { token, getUserInfo, getUserNodes, addNodeModalOpen } = useValetStore()
 
   const onXClick = async () => {
     const { data } = await axios.post('http://localhost:3000/x/get-redirect-url', {}, {
@@ -47,6 +48,7 @@ export const Home = () => {
           </div>
         </div>
       </>}
+      {addNodeModalOpen && <AddNodeModal />}
     </div>
   )
 }

@@ -16,8 +16,9 @@ export interface ValetStore {
   setUserNodes: (nodes: string[]) => void
   onSignOut: () => void
   addNodeModalOpen: boolean
-  setAddNodeModalOpen: (open: boolean) => void
+  setAddNodeModalOpen: (addNodeModalOpen: boolean) => void
   checkIsNodeAvailable: (node: string) => Promise<boolean>
+  bootNode: (kinodeName: string, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
 }
 
 const useValetStore = create<ValetStore>()(
@@ -63,22 +64,54 @@ const useValetStore = create<ValetStore>()(
         setUserNodes([])
       },
       addNodeModalOpen: false,
-      setAddNodeModalOpen: (open: boolean) => {
-        set({ addNodeModalOpen: open })
+      setAddNodeModalOpen: (addNodeModalOpen: boolean) => {
+        set({ addNodeModalOpen })
       },
       checkIsNodeAvailable: async (node: string) => {
         const token = get().token
         if (!token) return false
-        const { data: isNodeAvailable } = await axios.get('http://localhost:3000/check-dot-os-availability', {
+        if (node.endsWith('.os')) {
+          node = node.replace('.os', '')
+        }
+        const { data: isNodeAvailable } = await axios.get(`http://localhost:3000/check-dot-os-availability/${node}`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-          },
-          params: {
-            node
           }
         })
         return Boolean(isNodeAvailable)
+      },
+      bootNode: async (kinodeName: string, passwordHash: string) => {
+        const token = get().token
+        if (!token) return { success: false, error: true }
+        if (!passwordHash.startsWith('0x')) {
+          passwordHash = '0x' + passwordHash
+        }
+        if (kinodeName.includes('.')) {
+          kinodeName = kinodeName.split('.')[0]
+        }
+        try {
+          const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          };
+          console.log({ headers })
+          const { data: { eligible, reason } } = await axios.post('http://localhost:3000/free-kinode-eligibility-boot', {
+            productId: 2,
+            kinodeName,
+            kinodePassword: passwordHash
+          },
+            { headers }
+          )
+          console.log({ eligible, reason })
+          return { success: Boolean(eligible), error: reason || false }
+        } catch (e: any) {
+          console.error('boot error', e)
+          return {
+            success: false,
+            error: e.response?.data?.message || 'Server Error'
+          }
+        }
       },
     }),
     {
