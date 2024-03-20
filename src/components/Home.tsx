@@ -5,9 +5,11 @@ import { useEffect } from 'react'
 import { UserCard } from './UserCard'
 import { UserNodesList } from './UserNodesList'
 import { AddNodeModal } from './AddNodeModal'
+import { ResetPasswordModal } from './ResetPasswordModal'
+import { UserNodeDetails } from './UserNodeDetails'
 
 export const Home = () => {
-  const { token, getUserInfo, getUserNodes, addNodeModalOpen } = useValetStore()
+  const { token, getUserInfo, activeNode, getUserNodes, addNodeModalOpen, resetPasswordModalOpen } = useValetStore()
 
   const onXClick = async () => {
     const { data } = await axios.post('http://localhost:3000/x/get-redirect-url', {}, {
@@ -44,11 +46,16 @@ export const Home = () => {
       {token && <>
         <div className='flex w-full p-4'>
           <UserNodesList />
-          <div className='flex flex-col w-1/2 obox'>
+          <div className='flex flex-col w-1/2 overflow-y-auto obox'>
+            {activeNode
+              ? <UserNodeDetails node={activeNode} />
+              : 'Select a node on the left-hand side.'
+            }
           </div>
         </div>
       </>}
       {addNodeModalOpen && <AddNodeModal />}
+      {resetPasswordModalOpen && <ResetPasswordModal />}
     </div>
   )
 }

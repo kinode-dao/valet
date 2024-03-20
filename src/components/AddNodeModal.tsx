@@ -2,6 +2,7 @@ import { useState } from 'react'
 import useValetStore from '../store/valetStore'
 import { Modal } from './Modal'
 import { createHash } from 'crypto'
+import { sha256 } from '../utilities/hash'
 
 enum AddNodeStage {
   CheckAvailability = 1,
@@ -34,21 +35,13 @@ export const AddNodeModal = () => {
   }
 
   const onPasswordChanged = async (password: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hash)); // convert buffer to byte array
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
-    setPasswordHash(hashHex);
+    const hashHex = await sha256(password)
+    setPasswordHash(hashHex)
   };
 
   const onConfirmPasswordChanged = async (password: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hash)); // convert buffer to byte array
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
-    setConfirmPasswordHash(hashHex);
+    const hashHex = await sha256(password)
+    setConfirmPasswordHash(hashHex)
   };
 
   const onBootNode = async () => {

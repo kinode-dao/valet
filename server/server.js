@@ -42,7 +42,6 @@ app.all('*', async (req, res) => {
       headers,
     });
 
-    console.log({ response })
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error('Error proxying request:', error);

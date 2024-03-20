@@ -2,8 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import axios from 'axios'
 import { UserInfo, isUserInfoValid } from '../types/UserInfo'
-
-export interface UserNode { }
+import { UserNode } from '../types/UserNode'
 
 export interface ValetStore {
   token: string
@@ -12,13 +11,19 @@ export interface ValetStore {
   userInfo: UserInfo | null
   setUserInfo: (userInfo: UserInfo | null) => void
   getUserNodes: () => Promise<void>
-  userNodes: string[]
-  setUserNodes: (nodes: string[]) => void
+  userNodes: UserNode[]
+  setUserNodes: (nodes: UserNode[]) => void
   onSignOut: () => void
   addNodeModalOpen: boolean
   setAddNodeModalOpen: (addNodeModalOpen: boolean) => void
+  resetPasswordModalOpen: boolean
+  setResetPasswordModalOpen: (resetPasswordModalOpen: boolean) => void
   checkIsNodeAvailable: (node: string) => Promise<boolean>
   bootNode: (kinodeName: string, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
+  resetNodePassword: (node: UserNode, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
+  removeUserNode: (node: UserNode) => Promise<{ success: boolean, error: boolean | string }>
+  activeNode: UserNode | null
+  setActiveNode: (node: UserNode | null) => void
 }
 
 const useValetStore = create<ValetStore>()(
@@ -27,6 +32,8 @@ const useValetStore = create<ValetStore>()(
       set,
       get,
       token: '',
+      activeNode: null,
+      setActiveNode: (node: UserNode | null) => set({ activeNode: node }),
       setToken: (token: string) => set({ token }),
       getUserInfo: async () => {
         const token = get().token
@@ -54,9 +61,10 @@ const useValetStore = create<ValetStore>()(
           },
         })
         console.log({ userNodes })
+        set({ userNodes })
       },
       userNodes: [],
-      setUserNodes: (nodes: string[]) => set({ userNodes: nodes }),
+      setUserNodes: (userNodes: UserNode[]) => set({ userNodes }),
       onSignOut: () => {
         const { setToken, setUserInfo, setUserNodes } = get()
         setToken('')
@@ -66,6 +74,10 @@ const useValetStore = create<ValetStore>()(
       addNodeModalOpen: false,
       setAddNodeModalOpen: (addNodeModalOpen: boolean) => {
         set({ addNodeModalOpen })
+      },
+      resetPasswordModalOpen: false,
+      setResetPasswordModalOpen: (resetPasswordModalOpen: boolean) => {
+        set({ resetPasswordModalOpen })
       },
       checkIsNodeAvailable: async (node: string) => {
         const token = get().token
@@ -83,7 +95,7 @@ const useValetStore = create<ValetStore>()(
       },
       bootNode: async (kinodeName: string, passwordHash: string) => {
         const token = get().token
-        if (!token) return { success: false, error: true }
+        if (!token) return { success: false, error: 'Token is required. Please log in.' }
         if (!passwordHash.startsWith('0x')) {
           passwordHash = '0x' + passwordHash
         }
@@ -111,6 +123,52 @@ const useValetStore = create<ValetStore>()(
             success: false,
             error: e.response?.data?.message || 'Server Error'
           }
+        }
+      },
+      resetNodePassword: async (node: UserNode, passwordHash: string) => {
+        const token = get().token
+        if (!token) return { success: false, error: 'Token is required. Please log in.' }
+        if (node.kinode_name.includes('.')) {
+          node.kinode_name = node.kinode_name.split('.')[0]
+        }
+        if (!passwordHash.startsWith('0x')) {
+          passwordHash = '0x' + passwordHash
+        }
+        try {
+          const { data } = await axios.put(`http://localhost:3000/reset-kinode-password/${node.kinode_name}`, {
+            kinodePassword: passwordHash
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          console.log(data)
+          return { success: true, error: false }
+        } catch (e: any) {
+          console.error('reset password error', e)
+          return { success: false, error: e.response?.data?.message || 'Server Error' }
+        }
+      },
+      removeUserNode: async (node: UserNode) => {
+        const token = get().token
+        if (!token) return { success: false, error: 'Token is required. Please log in.' }
+        if (node.kinode_name.includes('.')) {
+          node.kinode_name = node.kinode_name.split('.')[0]
+        }
+        try {
+          const { data } = await axios.put(`http://localhost:3000/deactivate-kinode/${node.kinode_name}`, {
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          console.log(data)
+          return { success: true, error: false }
+        } catch (e: any) {
+          console.error('reset password error', e)
+          return { success: false, error: e.response?.data?.message || 'Server Error' }
         }
       },
     }),
