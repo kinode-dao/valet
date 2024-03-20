@@ -7,9 +7,10 @@ import { UserNodesList } from './UserNodesList'
 import { AddNodeModal } from './AddNodeModal'
 import { ResetPasswordModal } from './ResetPasswordModal'
 import { UserNodeDetails } from './UserNodeDetails'
+import { DeactivateNodeModal } from './DeactivateNodeModal'
 
 export const Home = () => {
-  const { token, getUserInfo, activeNode, getUserNodes, addNodeModalOpen, resetPasswordModalOpen } = useValetStore()
+  const { token, getUserInfo, activeNode, setActiveNode, userNodes, getUserNodes, addNodeModalOpen, resetPasswordModalOpen, deactivateNodeModalOpen } = useValetStore()
 
   const onXClick = async () => {
     const { data } = await axios.post('http://localhost:3000/x/get-redirect-url', {}, {
@@ -25,6 +26,19 @@ export const Home = () => {
       getUserInfo()
       getUserNodes()
     }
+    const intervalId = setInterval(async () => {
+      if (token) {
+        await getUserInfo()
+        await getUserNodes()
+        if (activeNode) {
+          const thatNode = userNodes.find(n => n.id === activeNode.id)
+          console.log({ thatNode })
+          if (thatNode) setActiveNode(thatNode)
+        }
+      }
+    }, 10000)
+
+    return () => clearInterval(intervalId)
   }, [token])
 
   return (
@@ -56,6 +70,7 @@ export const Home = () => {
       </>}
       {addNodeModalOpen && <AddNodeModal />}
       {resetPasswordModalOpen && <ResetPasswordModal />}
+      {deactivateNodeModalOpen && <DeactivateNodeModal />}
     </div>
   )
 }

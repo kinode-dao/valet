@@ -666,6 +666,15 @@ button:hover {
   background-color: rgb(255 245 217 / 0.25);
 }
 
+.alt {
+  --tw-border-opacity: 1;
+  border-color: rgb(255 245 217 / var(--tw-border-opacity));
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 245 217 / var(--tw-bg-opacity));
+  --tw-text-opacity: 1;
+  color: rgb(34 33 31 / var(--tw-text-opacity));
+}
+
 .thin {
   border-style: none;
   padding-left: 0px;
@@ -690,6 +699,10 @@ button:hover {
 
 .icon.alt:hover {
   border-color: rgb(255 245 217 / 0.25);
+}
+
+.pointer-events-none {
+  pointer-events: none;
 }
 
 .fixed {
@@ -734,12 +747,20 @@ button:hover {
   margin-bottom: 0.5rem;
 }
 
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
 .mb-8 {
   margin-bottom: 2rem;
 }
 
 .ml-1 {
   margin-left: 0.25rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
 }
 
 .mr-2 {
@@ -764,14 +785,6 @@ button:hover {
 
 .mt-6 {
   margin-top: 1.5rem;
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.ml-2 {
-  margin-left: 0.5rem;
 }
 
 .flex {
@@ -818,6 +831,10 @@ button:hover {
   flex-direction: column;
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
 .place-content-center {
   place-content: center;
 }
@@ -826,20 +843,16 @@ button:hover {
   place-items: center;
 }
 
+.items-end {
+  align-items: flex-end;
+}
+
 .items-center {
   align-items: center;
 }
 
-.justify-center {
-  justify-content: center;
-}
-
 .self-start {
   align-self: flex-start;
-}
-
-.self-end {
-  align-self: flex-end;
 }
 
 .self-center {
@@ -850,10 +863,6 @@ button:hover {
   align-self: stretch;
 }
 
-.justify-self-end {
-  justify-self: end;
-}
-
 .overflow-y-auto {
   overflow-y: auto;
 }
@@ -862,16 +871,8 @@ button:hover {
   border-radius: 0.5rem;
 }
 
-.rounded-md {
-  border-radius: 0.375rem;
-}
-
-.rounded-xl {
-  border-radius: 0.75rem;
-}
-
-.\!rounded-xl {
-  border-radius: 0.75rem !important;
+.rounded {
+  border-radius: 0.25rem;
 }
 
 .border {
@@ -890,10 +891,6 @@ button:hover {
   border-right-width: 0px;
 }
 
-.border-t-0 {
-  border-top-width: 0px;
-}
-
 .border-blue-200 {
   --tw-border-opacity: 1;
   border-color: rgb(191 219 254 / var(--tw-border-opacity));
@@ -902,6 +899,10 @@ button:hover {
 .border-white {
   --tw-border-opacity: 1;
   border-color: rgb(255 245 217 / var(--tw-border-opacity));
+}
+
+.\!bg-white\/25 {
+  background-color: rgb(255 245 217 / 0.25) !important;
 }
 
 .bg-black {
@@ -914,12 +915,33 @@ button:hover {
   background-color: rgb(59 130 246 / var(--tw-bg-opacity));
 }
 
-.bg-white\/50 {
-  background-color: rgb(255 245 217 / 0.5);
+.bg-orange\/20 {
+  background-color: rgb(243 84 34 / 0.2);
+}
+
+.bg-white\/20 {
+  background-color: rgb(255 245 217 / 0.2);
+}
+
+.bg-orange\/40 {
+  background-color: rgb(243 84 34 / 0.4);
+}
+
+.bg-orange {
+  --tw-bg-opacity: 1;
+  background-color: rgb(243 84 34 / var(--tw-bg-opacity));
+}
+
+.bg-white\/10 {
+  background-color: rgb(255 245 217 / 0.1);
 }
 
 .bg-white\/25 {
   background-color: rgb(255 245 217 / 0.25);
+}
+
+.bg-orange\/25 {
+  background-color: rgb(243 84 34 / 0.25);
 }
 
 .bg-opacity-50 {
@@ -928,6 +950,10 @@ button:hover {
 
 .p-4 {
   padding: 1rem;
+}
+
+.p-2 {
+  padding: 0.5rem;
 }
 
 .px-2 {
@@ -943,6 +969,20 @@ button:hover {
 .py-4 {
   padding-top: 1rem;
   padding-bottom: 1rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.pl-2 {
+  padding-left: 0.5rem;
 }
 
 .text-2xl {
@@ -963,6 +1003,27 @@ button:hover {
 .text-xs {
   font-size: 0.75rem;
   line-height: 1rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-\[8px\] {
+  font-size: 8px;
+}
+
+.text-\[12px\] {
+  font-size: 12px;
+}
+
+.text-\[10px\] {
+  font-size: 10px;
+}
+
+.font-bold {
+  font-weight: 700;
 }
 
 .text-orange {
@@ -1094,10 +1155,10 @@ button:disabled {
   padding: 1rem;
 }
 
-.hover\:bg-white\/50:hover {
-  background-color: rgb(255 245 217 / 0.5);
-}
-
 .hover\:bg-white\/25:hover {
   background-color: rgb(255 245 217 / 0.25);
+}
+
+.hover\:bg-white\/35:hover {
+  background-color: rgb(255 245 217 / 0.35);
 }

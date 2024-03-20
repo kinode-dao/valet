@@ -5,8 +5,9 @@ import { sha256 } from "../utilities/hash"
 
 export const ResetPasswordModal = () => {
   const { activeNode, setResetPasswordModalOpen, resetNodePassword } = useValetStore()
-  const [newPasswordHash, setNewPasswordHash] = useState('')
-  const [confirmNewPasswordHash, setConfirmNewPasswordHash] = useState('')
+  const [newPassword, setNewPassword] = useState<string>('')
+  const [newPasswordHash, setNewPasswordHash] = useState<string>('')
+  const [confirmNewPasswordHash, setConfirmNewPasswordHash] = useState<string>('')
   const [passwordIsResetting, setPasswordIsResetting] = useState(false)
 
   if (!activeNode) {
@@ -15,6 +16,7 @@ export const ResetPasswordModal = () => {
   }
 
   const onNewPasswordChanged = async (np: string) => {
+    setNewPassword(np)
     const hash = await sha256(np)
     setNewPasswordHash(hash)
   }
@@ -25,6 +27,7 @@ export const ResetPasswordModal = () => {
   }
 
   const onPasswordReset = async () => {
+    if (newPassword.length < 8 || newPasswordHash !== confirmNewPasswordHash) return alert('Password must be at least 8 characters long, and passwords must match.')
     setPasswordIsResetting(true)
     const { success, error } = await resetNodePassword(activeNode, newPasswordHash)
     setPasswordIsResetting(false)
@@ -48,14 +51,17 @@ export const ResetPasswordModal = () => {
           placeholder="New password"
           className="grow"
           onChange={(e) => onNewPasswordChanged(e.target.value)}
+          minLength={8}
         />
         <input
           type="password"
           placeholder="Confirm new password"
           className="grow"
           onChange={(e) => onConfirmPasswordChanged(e.target.value)}
+          minLength={8}
         />
       </div>
+      {newPassword.length < 8 && <div className="self-center my-2">Password must be at least 8 characters long.</div>}
       <div className="self-center my-2">
         {(newPasswordHash && confirmNewPasswordHash && (newPasswordHash === confirmNewPasswordHash))
           ? 'passwords match'

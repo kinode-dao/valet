@@ -17,6 +17,7 @@ export const AddNodeModal = () => {
   const [available, setAvailable] = useState<boolean | null>(null)
   const [passwordHash, setPasswordHash] = useState<string>('')
   const [confirmPasswordHash, setConfirmPasswordHash] = useState<string>('')
+  const [password, setPassword] = useState('')
 
   const onNodeNameChanged = (name: string) => {
     setAvailable(null)
@@ -35,6 +36,7 @@ export const AddNodeModal = () => {
   }
 
   const onPasswordChanged = async (password: string) => {
+    setPassword(password)
     const hashHex = await sha256(password)
     setPasswordHash(hashHex)
   };
@@ -45,6 +47,7 @@ export const AddNodeModal = () => {
   };
 
   const onBootNode = async () => {
+    if (password.length < 8 || passwordHash !== confirmPasswordHash) return alert('Password must be at least 8 characters long, and passwords must match.')
     setStage(AddNodeStage.Boot)
     const { success, error } = await bootNode(nodeName, passwordHash)
     if (success) {
@@ -95,6 +98,7 @@ export const AddNodeModal = () => {
           className='grow'
         />
       </div>
+      {password.length < 8 && <div className='my-2 self-center'>Password must be at least 8 characters long.</div>}
       {(passwordHash !== confirmPasswordHash || passwordHash === '' || confirmPasswordHash === '')
         ? <div className='my-2 self-center'>Passwords do not match.</div>
         : <button

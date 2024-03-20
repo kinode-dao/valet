@@ -21,9 +21,11 @@ export interface ValetStore {
   checkIsNodeAvailable: (node: string) => Promise<boolean>
   bootNode: (kinodeName: string, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
   resetNodePassword: (node: UserNode, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
-  removeUserNode: (node: UserNode) => Promise<{ success: boolean, error: boolean | string }>
+  deactivateNode: (node: UserNode) => Promise<{ success: boolean, error: boolean | string }>
   activeNode: UserNode | null
   setActiveNode: (node: UserNode | null) => void
+  deactivateNodeModalOpen: boolean
+  setDeactivateNodeModalOpen: (deactivateNodeModalOpen: boolean) => void
 }
 
 const useValetStore = create<ValetStore>()(
@@ -52,16 +54,23 @@ const useValetStore = create<ValetStore>()(
       userInfo: null,
       setUserInfo: (userInfo: UserInfo | null) => set({ userInfo }),
       getUserNodes: async () => {
-        const token = get().token
+        const { token, activeNode, setActiveNode } = get()
         if (!token) return
-        const { data: userNodes } = await axios.get('http://localhost:3000/get-user-kinodes', {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-        })
-        console.log({ userNodes })
-        set({ userNodes })
+        try {
+          const { data: userNodes } = await axios.get('http://localhost:3000/get-user-kinodes', {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+          })
+          console.log({ userNodes })
+          if (activeNode && !userNodes.find((n: UserNode) => n.id === activeNode.id)) {
+            setActiveNode(null)
+          }
+          set({ userNodes })
+        } catch (e) {
+
+        }
       },
       userNodes: [],
       setUserNodes: (userNodes: UserNode[]) => set({ userNodes }),
@@ -108,15 +117,15 @@ const useValetStore = create<ValetStore>()(
             'Authorization': `Bearer ${token}`
           };
           console.log({ headers })
-          const { data: { eligible, reason } } = await axios.post('http://localhost:3000/free-kinode-eligibility-boot', {
+          const { data: { eligible, reason, message } } = await axios.post('http://localhost:3000/free-kinode-eligibility-boot', {
             productId: 2,
             kinodeName,
             kinodePassword: passwordHash
           },
             { headers }
           )
-          console.log({ eligible, reason })
-          return { success: Boolean(eligible), error: reason || false }
+          console.log({ eligible, reason, message })
+          return { success: (Boolean(eligible) || Boolean(message)), error: reason || false }
         } catch (e: any) {
           console.error('boot error', e)
           return {
@@ -135,7 +144,7 @@ const useValetStore = create<ValetStore>()(
           passwordHash = '0x' + passwordHash
         }
         try {
-          const { data } = await axios.put(`http://localhost:3000/reset-kinode-password/${node.kinode_name}`, {
+          const { data } = await axios.put(`http://localhost:3000/reset-kinode-password/${node.id}`, {
             kinodePassword: passwordHash
           }, {
             headers: {
@@ -150,15 +159,14 @@ const useValetStore = create<ValetStore>()(
           return { success: false, error: e.response?.data?.message || 'Server Error' }
         }
       },
-      removeUserNode: async (node: UserNode) => {
+      deactivateNode: async (node: UserNode) => {
         const token = get().token
         if (!token) return { success: false, error: 'Token is required. Please log in.' }
         if (node.kinode_name.includes('.')) {
           node.kinode_name = node.kinode_name.split('.')[0]
         }
         try {
-          const { data } = await axios.put(`http://localhost:3000/deactivate-kinode/${node.kinode_name}`, {
-          }, {
+          const { data } = await axios.put(`http://localhost:3000/deactivate-kinode/${node.id}`, undefined, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
@@ -167,10 +175,14 @@ const useValetStore = create<ValetStore>()(
           console.log(data)
           return { success: true, error: false }
         } catch (e: any) {
-          console.error('reset password error', e)
+          console.error('deactivate kinode error', e)
           return { success: false, error: e.response?.data?.message || 'Server Error' }
         }
       },
+      deactivateNodeModalOpen: false,
+      setDeactivateNodeModalOpen: (deactivateNodeModalOpen: boolean) => {
+        set({ deactivateNodeModalOpen })
+      }
     }),
     {
       name: 'valet', // unique name
