@@ -16,7 +16,7 @@ export const Home = () => {
   const onXClick = async () => {
     const { data } = await axios.post('http://localhost:3002/x/get-redirect-url', {}, {
       headers: {
-        'accepts': 'application/json',
+        'accept': 'application/json',
       }
     })
     window.location.href = data;

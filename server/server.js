@@ -8,8 +8,8 @@ const port = 3002;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 app.use(cors({
-  allowedHeaders: ['Authorization', 'Content-Type'], // Add other headers here as needed
-  origin: IS_PROD ? 'https://valet.kinode.net' : '*', // Adjust this according to your security requirements
+  allowedHeaders: ['Authorization', 'Content-Type', 'Accept'],
+  origin: IS_PROD ? 'https://valet.kinode.net' : 'http://localhost:5173',
 }));
 app.use(bodyParser.json());
 
