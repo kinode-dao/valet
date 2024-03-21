@@ -26,6 +26,8 @@ export interface ValetStore {
   setActiveNode: (node: UserNode | null) => void
   deactivateNodeModalOpen: boolean
   setDeactivateNodeModalOpen: (deactivateNodeModalOpen: boolean) => void
+  get: () => ValetStore
+  set: (state: ValetStore) => void
 }
 
 const useValetStore = create<ValetStore>()(
@@ -40,7 +42,7 @@ const useValetStore = create<ValetStore>()(
       getUserInfo: async () => {
         const token = get().token
         if (!token) return
-        const { data: userInfo } = await axios.get('http://localhost:3000/get-user-info-x', {
+        const { data: userInfo } = await axios.get('http://localhost:3002/get-user-info-x', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
@@ -57,7 +59,7 @@ const useValetStore = create<ValetStore>()(
         const { token, activeNode, setActiveNode } = get()
         if (!token) return
         try {
-          const { data: userNodes } = await axios.get('http://localhost:3000/get-user-kinodes', {
+          const { data: userNodes } = await axios.get('http://localhost:3002/get-user-kinodes', {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
@@ -94,7 +96,7 @@ const useValetStore = create<ValetStore>()(
         if (node.endsWith('.os')) {
           node = node.replace('.os', '')
         }
-        const { data: isNodeAvailable } = await axios.get(`http://localhost:3000/check-dot-os-availability/${node}`, {
+        const { data: isNodeAvailable } = await axios.get(`http://localhost:3002/check-dot-os-availability/${node}`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
@@ -117,7 +119,7 @@ const useValetStore = create<ValetStore>()(
             'Authorization': `Bearer ${token}`
           };
           console.log({ headers })
-          const { data: { eligible, reason, message } } = await axios.post('http://localhost:3000/free-kinode-eligibility-boot', {
+          const { data: { eligible, reason, message } } = await axios.post('http://localhost:3002/free-kinode-eligibility-boot', {
             productId: 2,
             kinodeName,
             kinodePassword: passwordHash
@@ -144,7 +146,7 @@ const useValetStore = create<ValetStore>()(
           passwordHash = '0x' + passwordHash
         }
         try {
-          const { data } = await axios.put(`http://localhost:3000/reset-kinode-password/${node.id}`, {
+          const { data } = await axios.put(`http://localhost:3002/reset-kinode-password/${node.id}`, {
             kinodePassword: passwordHash
           }, {
             headers: {
@@ -166,7 +168,7 @@ const useValetStore = create<ValetStore>()(
           node.kinode_name = node.kinode_name.split('.')[0]
         }
         try {
-          const { data } = await axios.put(`http://localhost:3000/deactivate-kinode/${node.id}`, undefined, {
+          const { data } = await axios.put(`http://localhost:3002/deactivate-kinode/${node.id}`, undefined, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`

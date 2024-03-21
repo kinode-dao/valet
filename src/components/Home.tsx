@@ -8,12 +8,13 @@ import { AddNodeModal } from './AddNodeModal'
 import { ResetPasswordModal } from './ResetPasswordModal'
 import { UserNodeDetails } from './UserNodeDetails'
 import { DeactivateNodeModal } from './DeactivateNodeModal'
+import { UserNode } from '../types/UserNode'
 
 export const Home = () => {
-  const { token, getUserInfo, activeNode, setActiveNode, userNodes, getUserNodes, addNodeModalOpen, resetPasswordModalOpen, deactivateNodeModalOpen } = useValetStore()
+  const { get, token, getUserInfo, activeNode, setActiveNode, userNodes, getUserNodes, addNodeModalOpen, resetPasswordModalOpen, deactivateNodeModalOpen } = useValetStore()
 
   const onXClick = async () => {
-    const { data } = await axios.post('http://localhost:3000/x/get-redirect-url', {}, {
+    const { data } = await axios.post('http://localhost:3002/x/get-redirect-url', {}, {
       headers: {
         'accepts': 'application/json',
       }
@@ -30,8 +31,9 @@ export const Home = () => {
       if (token) {
         await getUserInfo()
         await getUserNodes()
+        const { userNodes, activeNode } = get()
         if (activeNode) {
-          const thatNode = userNodes.find(n => n.id === activeNode.id)
+          const thatNode = userNodes.find((n: UserNode) => n.id === activeNode.id)
           console.log({ thatNode })
           if (thatNode) setActiveNode(thatNode)
         }
