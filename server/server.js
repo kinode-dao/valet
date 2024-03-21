@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 
 const app = express();
-const port = 3000;
+const port = 3002;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 app.use(cors({
