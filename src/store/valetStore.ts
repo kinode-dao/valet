@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import axios from 'axios'
 import { UserInfo, isUserInfoValid } from '../types/UserInfo'
 import { UserNode } from '../types/UserNode'
+import { middleware } from '../utilities/middleware'
+import { ServerAlert } from '../types/ServerAlert'
 
 export interface ValetStore {
   token: string
@@ -23,6 +25,13 @@ export interface ValetStore {
   resetNodePassword: (node: UserNode, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
   activeNode: UserNode | null
   setActiveNode: (node: UserNode | null) => void
+  serverIsUnderMaintenance: boolean
+  setServerIsUnderMaintenance: (serverIsUnderMaintenance: boolean) => void
+  expectedAvailabilityDate: number | null
+  setExpectedAvailabilityDate: (expectedAvailabilityDate: number | null) => void
+  alerts: ServerAlert[]
+  setAlerts: (alerts: ServerAlert[]) => void
+  getServerAlerts: () => Promise<void>
   get: () => ValetStore
   set: (state: ValetStore) => void
 }
@@ -34,42 +43,73 @@ const useValetStore = create<ValetStore>()(
       get,
       token: '',
       activeNode: null,
+      serverIsUnderMaintenance: false,
+      expectedAvailabilityDate: null,
+      alerts: [],
+      setAlerts: (alerts: ServerAlert[]) => set({ alerts }),
+      setExpectedAvailabilityDate: (expectedAvailabilityDate: number | null) => set({ expectedAvailabilityDate }),
+      setServerIsUnderMaintenance: (serverIsUnderMaintenance: boolean) => set({ serverIsUnderMaintenance }),
       setActiveNode: (node: UserNode | null) => set({ activeNode: node }),
       setToken: (token: string) => set({ token }),
       getUserInfo: async () => {
-        const token = get().token
+        const { token, setServerIsUnderMaintenance, setExpectedAvailabilityDate } = get()
         if (!token) return
-        const { data: userInfo } = await axios.get('http://localhost:3002/get-user-info-x', {
+        const result = await middleware(axios.get('http://localhost:3002/get-user-info-x', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-        })
-        console.log({ userInfo })
-        if (isUserInfoValid(userInfo)) {
-          set({ userInfo })
+        }))
+        if (result.maintenance) {
+          setServerIsUnderMaintenance(true)
+          setExpectedAvailabilityDate(result.expectedAvailability)
+          return
+        }
+        setServerIsUnderMaintenance(false)
+        setExpectedAvailabilityDate(null)
+        if (result.error) {
+          return alert(result.message)
+        }
+        else if (result.data && isUserInfoValid(result.data)) {
+          set({ userInfo: result.data })
         }
       },
       userInfo: null,
       setUserInfo: (userInfo: UserInfo | null) => set({ userInfo }),
-      getUserNodes: async () => {
-        const { token, activeNode, setActiveNode } = get()
+      getServerAlerts: async () => {
+        const { token, alerts, setAlerts } = get()
         if (!token) return
-        try {
-          const { data: userNodes } = await axios.get('http://localhost:3002/get-user-kinodes', {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-          })
-          console.log({ userNodes })
-          if (activeNode && !userNodes.find((n: UserNode) => n.id === activeNode.id)) {
-            setActiveNode(null)
+        const result = await middleware(axios.get('http://localhost:3002/alerts', {
+          headers: {
+            'Content-Type': 'application/json',
+            'client_id': 2,
           }
-          set({ userNodes })
-        } catch (e) {
-
+        }))
+        setAlerts(result.data?.alerts.map((a: ServerAlert) => ({ ...a, dismissed: alerts.find(b => b.id === a.id)?.dismissed || false })) || []);
+      },
+      getUserNodes: async () => {
+        const { token, activeNode, setActiveNode, setServerIsUnderMaintenance, setExpectedAvailabilityDate } = get()
+        if (!token) return
+        const result = await middleware(axios.get('http://localhost:3002/get-user-kinodes', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+        }))
+        if (result.maintenance) {
+          setServerIsUnderMaintenance(true)
+          setExpectedAvailabilityDate(result.expectedAvailability)
+          return
         }
+        setServerIsUnderMaintenance(false)
+        setExpectedAvailabilityDate(null)
+        if (result.error) {
+          return alert(result.message)
+        }
+        if (activeNode && !result.data.find((n: UserNode) => n.id === activeNode.id)) {
+          setActiveNode(null)
+        }
+        set({ userNodes: result.data })
       },
       userNodes: [],
       setUserNodes: (userNodes: UserNode[]) => set({ userNodes }),
@@ -88,21 +128,32 @@ const useValetStore = create<ValetStore>()(
         set({ resetPasswordModalOpen })
       },
       checkIsNodeAvailable: async (node: string) => {
-        const token = get().token
+        const { token, setServerIsUnderMaintenance, setExpectedAvailabilityDate } = get()
         if (!token) return false
         if (node.endsWith('.os')) {
           node = node.replace('.os', '')
         }
-        const { data: isNodeAvailable } = await axios.get(`http://localhost:3002/check-dot-os-availability/${node}`, {
+        const result = await middleware(axios.get(`http://localhost:3002/check-dot-os-availability/${node}`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
-        })
-        return Boolean(isNodeAvailable)
+        }))
+        if (result.maintenance) {
+          setServerIsUnderMaintenance(true)
+          setExpectedAvailabilityDate(result.expectedAvailability)
+          return false
+        }
+        setServerIsUnderMaintenance(false)
+        setExpectedAvailabilityDate(null)
+        if (result.error) {
+          alert(result.message)
+          return false
+        }
+        return Boolean(result.data)
       },
       bootNode: async (kinodeName: string, passwordHash: string) => {
-        const token = get().token
+        const { token, setServerIsUnderMaintenance, setExpectedAvailabilityDate } = get()
         if (!token) return { success: false, error: 'Token is required. Please log in.' }
         if (!passwordHash.startsWith('0x')) {
           passwordHash = '0x' + passwordHash
@@ -110,31 +161,32 @@ const useValetStore = create<ValetStore>()(
         if (kinodeName.includes('.')) {
           kinodeName = kinodeName.split('.')[0]
         }
-        try {
-          const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          };
-          console.log({ headers })
-          const { data: { eligible, reason, message } } = await axios.post('http://localhost:3002/free-kinode-eligibility-boot', {
-            productId: 2,
-            kinodeName,
-            kinodePassword: passwordHash
-          },
-            { headers }
-          )
-          console.log({ eligible, reason, message })
-          return { success: (Boolean(eligible) || Boolean(message)), error: reason || false }
-        } catch (e: any) {
-          console.error('boot error', e)
-          return {
-            success: false,
-            error: e.response?.data?.message || 'Server Error'
-          }
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        };
+        console.log({ headers })
+        const result = await middleware(axios.post('http://localhost:3002/free-kinode-eligibility-boot', {
+          productId: 2,
+          kinodeName,
+          kinodePassword: passwordHash
+        },
+          { headers }
+        ))
+        if (result.maintenance) {
+          setServerIsUnderMaintenance(true)
+          setExpectedAvailabilityDate(result.expectedAvailability)
+          return { success: false, error: 'Server Maintenance in Progress' }
         }
+        setServerIsUnderMaintenance(false)
+        setExpectedAvailabilityDate(null)
+        if (result.error) {
+          return { success: false, error: result.message }
+        }
+        return { success: (Boolean(result.data.eligible) || Boolean(result.data.message)), error: result.data.reason || false }
       },
       resetNodePassword: async (node: UserNode, passwordHash: string) => {
-        const token = get().token
+        const { token, setServerIsUnderMaintenance, setExpectedAvailabilityDate } = get()
         if (!token) return { success: false, error: 'Token is required. Please log in.' }
         if (node.kinode_name.includes('.')) {
           node.kinode_name = node.kinode_name.split('.')[0]
@@ -142,21 +194,25 @@ const useValetStore = create<ValetStore>()(
         if (!passwordHash.startsWith('0x')) {
           passwordHash = '0x' + passwordHash
         }
-        try {
-          const { data } = await axios.put(`http://localhost:3002/reset-kinode-password/${node.id}`, {
-            kinodePassword: passwordHash
-          }, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          console.log(data)
-          return { success: true, error: false }
-        } catch (e: any) {
-          console.error('reset password error', e)
-          return { success: false, error: e.response?.data?.message || 'Server Error' }
+        const result = await middleware(axios.put(`http://localhost:3002/reset-kinode-password/${node.id}`, {
+          kinodePassword: passwordHash
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }))
+        if (result.maintenance) {
+          setServerIsUnderMaintenance(true)
+          setExpectedAvailabilityDate(result.expectedAvailability)
+          return { success: false, error: 'Server Maintenance in Progress' }
         }
+        setServerIsUnderMaintenance(false)
+        setExpectedAvailabilityDate(null)
+        if (result.error) {
+          return { success: false, error: result.message }
+        }
+        return { success: true, error: false }
       },
     }),
     {

@@ -1,4 +1,4 @@
-import { FaTrash, FaUnlock, FaUserLock } from "react-icons/fa6"
+import { FaUnlock } from "react-icons/fa6"
 import { UserNode } from "../types/UserNode"
 import useValetStore from "../store/valetStore"
 import classNames from "classnames"
