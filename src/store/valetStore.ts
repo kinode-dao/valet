@@ -21,11 +21,8 @@ export interface ValetStore {
   checkIsNodeAvailable: (node: string) => Promise<boolean>
   bootNode: (kinodeName: string, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
   resetNodePassword: (node: UserNode, passwordHash: string) => Promise<{ success: boolean, error: boolean | string }>
-  deactivateNode: (node: UserNode) => Promise<{ success: boolean, error: boolean | string }>
   activeNode: UserNode | null
   setActiveNode: (node: UserNode | null) => void
-  deactivateNodeModalOpen: boolean
-  setDeactivateNodeModalOpen: (deactivateNodeModalOpen: boolean) => void
   get: () => ValetStore
   set: (state: ValetStore) => void
 }
@@ -161,30 +158,6 @@ const useValetStore = create<ValetStore>()(
           return { success: false, error: e.response?.data?.message || 'Server Error' }
         }
       },
-      deactivateNode: async (node: UserNode) => {
-        const token = get().token
-        if (!token) return { success: false, error: 'Token is required. Please log in.' }
-        if (node.kinode_name.includes('.')) {
-          node.kinode_name = node.kinode_name.split('.')[0]
-        }
-        try {
-          const { data } = await axios.put(`http://localhost:3002/deactivate-kinode/${node.id}`, undefined, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          console.log(data)
-          return { success: true, error: false }
-        } catch (e: any) {
-          console.error('deactivate kinode error', e)
-          return { success: false, error: e.response?.data?.message || 'Server Error' }
-        }
-      },
-      deactivateNodeModalOpen: false,
-      setDeactivateNodeModalOpen: (deactivateNodeModalOpen: boolean) => {
-        set({ deactivateNodeModalOpen })
-      }
     }),
     {
       name: 'valet', // unique name

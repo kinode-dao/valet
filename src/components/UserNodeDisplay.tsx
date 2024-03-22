@@ -5,7 +5,7 @@ import classNames from "classnames"
 import { useEffect } from "react"
 
 export const UserNodeDisplay: React.FC<{ node: UserNode }> = ({ node }) => {
-  const { userNodes, activeNode, setResetPasswordModalOpen, setActiveNode, setDeactivateNodeModalOpen } = useValetStore()
+  const { userNodes, activeNode, setResetPasswordModalOpen, setActiveNode } = useValetStore()
   useEffect(() => {
     if (activeNode && !userNodes.find(n => n.id === activeNode?.id)) {
       setActiveNode(null)
@@ -31,12 +31,6 @@ export const UserNodeDisplay: React.FC<{ node: UserNode }> = ({ node }) => {
         onClick={() => setResetPasswordModalOpen(true)}
       >
         <FaUnlock />
-      </button>
-      <button
-        className="icon ml-2"
-        onClick={() => setDeactivateNodeModalOpen(true)}
-      >
-        <FaTrash />
       </button>
     </div>
   </div>

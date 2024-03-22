@@ -7,11 +7,10 @@ import { UserNodesList } from './UserNodesList'
 import { AddNodeModal } from './AddNodeModal'
 import { ResetPasswordModal } from './ResetPasswordModal'
 import { UserNodeDetails } from './UserNodeDetails'
-import { DeactivateNodeModal } from './DeactivateNodeModal'
 import { UserNode } from '../types/UserNode'
 
 export const Home = () => {
-  const { get, token, getUserInfo, activeNode, setActiveNode, userNodes, getUserNodes, addNodeModalOpen, resetPasswordModalOpen, deactivateNodeModalOpen } = useValetStore()
+  const { get, token, getUserInfo, activeNode, setActiveNode, getUserNodes, addNodeModalOpen, resetPasswordModalOpen } = useValetStore()
 
   const onXClick = async () => {
     const { data } = await axios.post('http://localhost:3002/x/get-redirect-url', {}, {
@@ -72,7 +71,6 @@ export const Home = () => {
       </>}
       {addNodeModalOpen && <AddNodeModal />}
       {resetPasswordModalOpen && <ResetPasswordModal />}
-      {deactivateNodeModalOpen && <DeactivateNodeModal />}
     </div>
   )
 }
